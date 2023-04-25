@@ -1,37 +1,41 @@
 import { Body, Delete, Get, Injectable, Param, Post, Put } from '@nestjs/common'
 import { CreatePostDto } from './post.dto/create-post.dto'
+import { InjectRepository } from '@nestjs/typeorm'
+import { PostEntity } from './post.entity'
+import { Repository } from 'typeorm'
 
 @Injectable()
 export class PostService {
-  posts: any[]
-
-  constructor() {
-    this.posts = [
-      { id: 1, content: 'rest' },
-      { id: 2, content: 'rest' },
-      { id: 3, content: 'rest' }
-    ]
-  }
+  constructor(
+    @InjectRepository(PostEntity)
+    private readonly postRepository: Repository<PostEntity>
+  ) {}
 
   async getAll() {
-    return this.posts
+    return this.postRepository.find()
   }
 
   async create(dto: CreatePostDto) {
-    return [...this.posts, dto]
+    const post = this.postRepository.create(dto)
+    return await this.postRepository.save(post)
   }
 
   async getById(id: string) {
-    return this.posts.find(p => p.id === Number(id))
+    return this.postRepository.findOne({
+      where: {
+        id: Number(id)
+      }
+    })
   }
 
   async update(id: string, dto: CreatePostDto) {
-    const post = await this.posts.find(p => p.id === Number(id))
+    const post = await this.getById(id)
     post.content = dto.content
-    return post
+    post.userName = dto.userName
+    return await this.postRepository.save(post)
   }
 
   async delete(id: string) {
-    return this.posts.filter(p => p.id !== id)
+    return await this.postRepository.delete({ id: Number(id) })
   }
 }
